@@ -2,67 +2,66 @@
 // Perform a GET request to the query URL
 d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson", function(data) {
   // Once we get a response, send the data.features object to the createFeatures function
-
-  function setFeatureStyle(feature, layer) {
   
-    function getMagnitude(magnitude){
-        return magnitude * 7;
-    }
-    function getColor(magcolor){
-      switch(true){
-          case magcolor >5:
-              return "white";
-          case magcolor >4:
-              return "blue";
-          case magcolor >3:
-              return "orange";
-          case magcolor >2:
-              return "red";
-          case magcolor >1:
-              return "green"
-          default:
-              return "yellow";
-        }
-    }
-  
-    console.log(feature)
-  
-    var map_style = {
-      radius: getMagnitude(feature.properties.mag),
-      fillColor: getColor(feature.properties.mag),
-      color: "#000",
-      weight: 1,
-      opacity: 1,
-      fillOpacity: 0.8
-    }
-  
-    console.log(map_style)
-
-    return map_style
-  }
-  function createFeatures(earthquakeData) {
-  
-    // Create a GeoJSON layer containing the features array on the earthquakeData object
-    // Run the onEachFeature function once for each piece of data in the array
-    var earthquakes = L.geoJSON(earthquakeData, {
-      pointToLayer: function(feature, latlng){
-        return L.circleMarker(latlng)
-      },
-      style: setFeatureStyle,
-      OnEachFeature: function(feature, layer) {
-        layer.bindPopup("<h3>" + feature.properties.place + "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
-      }
-    })
-  
-    // Sending our earthquakes layer to the createMap function
-    createMap(earthquakes);
-  }
-
-  createFeatures(data.features);
+  createMapAndFeatures(data.features);
 });
 
+function setFeatureStyle(feature, layer) {
+  
+  function getMagnitude(magnitude){
+      return magnitude * 5;
+  }
 
+  console.log(feature)
 
+  var map_style = {
+    radius: getMagnitude(feature.properties.mag),
+    fillColor: getColor(feature.properties.mag),
+    color: "#000",
+    weight: 1,
+    opacity: 1,
+    fillOpacity: 0.8
+  }
+
+  console.log(map_style)
+
+  return map_style
+}
+
+function createMapAndFeatures(earthquakeData) {
+  
+  // Create a GeoJSON layer containing the features array on the earthquakeData object
+  // Run the onEachFeature function once for each piece of data in the array
+  var earthquakes = L.geoJSON(earthquakeData, {
+    pointToLayer: function(feature, latlng){
+      return L.circleMarker(latlng)
+    },
+    style: setFeatureStyle,
+    OnEachFeature: function(feature, layer) {
+      layer.bindPopup("<h3>" + feature.properties.place + "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
+    }
+  })
+
+  // Sending our earthquakes layer to the createMap function
+  createMap(earthquakes);
+}
+
+function getColor(magcolor){
+  switch(true){
+      case magcolor >5:
+          return "white";
+      case magcolor >4:
+          return "green";
+      case magcolor >3:
+          return "yellow";
+      case magcolor >2:
+          return "orange";
+      case magcolor >1:
+          return "red"
+      default:
+          return "blue";
+    }
+}
 
 function createMap(earthquakes) {
 
@@ -97,19 +96,34 @@ function createMap(earthquakes) {
   };
 
     // Create our map, giving it the streetmap and earthquakes layers to display on load
-    var myMap = L.map("map", {
+  var map = L.map("map", {
       center: [
-        39.73, -104.99
+        0, 0
       ],
-      zoom: 5,
+      zoom: 2,
       layers: [streetmap, earthquakes]
-    });
+  });
   
     // Create a layer control
     // Pass in our baseMaps and overlayMaps
     // Add the layer control to the map
-    L.control.layers(baseMaps, overlayMaps, {
+  L.control.layers(baseMaps, overlayMaps, {
       collapsed: false
-    }).addTo(myMap);
-  }
-  
+    }).addTo(map);
+
+      
+  // The details for the legend
+  var legend = L.control({position: 'bottomright'});
+  legend.onAdd = function (map) {    
+  var div = L.DomUtil.create("div", "info legend");
+  var grades = [0,1,2,3,4,5], labels = ["0-1", "1-2", "2-3", "3-4", "4-5", "5+"];   
+      for (var i = 0; i < grades.length; i++) {
+          div.innerHTML +=
+              '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+           grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+      }
+      return div;
+  };
+  legend.addTo(map);
+}
+
